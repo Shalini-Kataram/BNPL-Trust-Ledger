@@ -8,8 +8,8 @@ RUN npm run build
 
 # Stage 2: Serve app with Nginx
 FROM nginx:alpine
-# Copy built static files (use 'dist' if you use Vite, or 'build' if you use Create React App)
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy built static files
+COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 8080
 
 # Custom Nginx configuration for React Client-Side Routing
