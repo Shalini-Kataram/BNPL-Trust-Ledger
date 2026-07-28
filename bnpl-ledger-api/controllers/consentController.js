@@ -219,8 +219,6 @@ async function grantConsent(req, res) {
       affordabilityAssessment: {
         mode:
           "LLOYDS_PLUS_GCUL",
-        lloydsOnly:
-          lloydsOnlyAssessment,
         consentEnriched:
           consentEnrichedAssessment
       },
