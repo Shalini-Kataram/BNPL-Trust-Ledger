@@ -1,2 +1,6 @@
-node_modules
 /bnpl-ledger-ui/build
+.DS_Store
+__MACOSX/
+*.swp
+node_modules/
+.env

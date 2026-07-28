@@ -1,0 +1,16 @@
+[
+  {
+    "id": "f1595c79-e436-4304-8af1-480bb5c4cd11",
+    "timestamp": "2026-07-27T09:19:56.951Z",
+    "customerHash": "9f49abe5a320cedfbbdfc653999cc772b343b744878286b9ca580cfe62480e16",
+    "eventType": "CONSENT_GRANTED",
+    "provider": "LLOYDS"
+  },
+  {
+    "id": "a611c55c-3373-4155-8fee-1171dca80f77",
+    "timestamp": "2026-07-27T09:22:41.632Z",
+    "customerHash": "9f49abe5a320cedfbbdfc653999cc772b343b744878286b9ca580cfe62480e16",
+    "eventType": "CONSENT_GRANTED",
+    "provider": "LLOYDS"
+  }
+]
