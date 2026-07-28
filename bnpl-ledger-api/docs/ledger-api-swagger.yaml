@@ -1,0 +1,117 @@
+openapi: 3.0.3
+
+info:
+  title: GCUL Ledger Service API
+  version: 1.0.0
+  description: Ledger integration service for BNPL Trust Ledger
+
+servers:
+  - url: http://localhost:8083
+
+paths:
+  /ledger/health:
+    get:
+      summary: Health Check
+      responses:
+        '200':
+          description: Service is running
+
+  /ledger/info:
+    get:
+      summary: Get Ledger Information
+      responses:
+        '200':
+          description: Ledger configuration information
+
+  /ledger/accounts:
+    get:
+      summary: Get Account Manager and Token Manager
+      responses:
+        '200':
+          description: Ledger accounts
+
+  /ledger/accounts/{accountId}:
+    get:
+      summary: Get Account Details
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account details
+
+  /ledger/transactions/{digest}:
+    get:
+      summary: Query Transaction State
+      parameters:
+        - name: digest
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction state
+
+  /ledger/public-key:
+    get:
+      summary: Retrieve GCUL Account Public Key
+      responses:
+        '200':
+          description: PEM public key
+
+  /ledger/test/sign:
+    get:
+      summary: Test KMS Signing
+      responses:
+        '200':
+          description: KMS signature response
+
+  /ledger/test/sign-client-transaction:
+    post:
+      summary: Sign Serialized Client Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serializedClientTransactionBase64:
+                  type: string
+      responses:
+        '200':
+          description: Signed transaction payload
+
+  /ledger/test/create-account-payload:
+    get:
+      summary: Generate CreateAccount Payload
+      responses:
+        '200':
+          description: CreateAccount request model
+
+  /ledger/test/client-transaction-payload:
+    get:
+      summary: Generate ClientTransaction Payload
+      responses:
+        '200':
+          description: ClientTransaction request model
+
+  /ledger/transactions/submit:
+    post:
+      summary: Submit Signed Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serializedSignedTransaction:
+                  type: string
+      responses:
+        '200':
+          description: Transaction submission result
