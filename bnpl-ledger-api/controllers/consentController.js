@@ -31,13 +31,6 @@ async function grantConsent(req, res) {
       paymentOption
     } = req.body;
 
-    if (!consent) {
-      return res.status(400).json({
-        success: false,
-        message: "Customer consent is required"
-      });
-    }
-
     if (!accountId) {
       return res.status(400).json({
         success: false,
