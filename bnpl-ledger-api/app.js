@@ -19,8 +19,11 @@ const timelineRoute =
 const dashboardRoute =
   require("./routes/dashboard");
 
-const ledgerRoute =
+const ledgerRouteOld =
   require("./routes/ledger");
+
+const ledgerRoutes =
+  require("./routes/ledger-route");
 
 const app = express();
 
@@ -56,7 +59,7 @@ app.use(
 
 app.use(
   "/ledger",
-  ledgerRoute
+  ledgerRoutes
 );
 
 
