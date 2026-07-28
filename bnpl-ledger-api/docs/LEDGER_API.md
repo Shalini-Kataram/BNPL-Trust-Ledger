@@ -283,6 +283,129 @@ POST /ledger/transactions/submit
   "serializedSignedTransaction": "..."
 }
 ```
+### Create Customer Request
+
+```http
+POST /ledger/customers
+```
+
+Creates a customer CreateAccount transaction model.
+
+Request:
+
+```json
+{
+  "customerName": "BNPL Customer 001"
+}
+```
+
+---
+
+### Generate ClientTransaction Payload
+
+```http
+GET /ledger/test/client-transaction-payload
+```
+
+Returns CreateAccount ClientTransaction JSON.
+
+---
+
+### Verify Proto Loading
+
+```http
+GET /ledger/test/proto
+```
+
+Verifies GCUL protobuf definitions are correctly loaded.
+
+---
+
+### Serialize ClientTransaction
+
+```http
+POST /ledger/test/serialize-client-transaction
+```
+
+Request:
+
+```json
+{
+  "customerName": "BNPL Customer 001"
+}
+```
+
+Returns:
+
+```json
+{
+  "serializedClientTransactionBase64": "...",
+  "serializedClientTransactionHex": "...",
+  "byteLength": 320
+}
+```
+
+---
+
+### Build SignedTransaction
+
+```http
+POST /ledger/test/build-signed-transaction
+```
+
+Request:
+
+```json
+{
+  "serializedClientTransactionBase64": "..."
+}
+```
+
+Returns serialized SignedTransaction protobuf.
+
+---
+
+### Create Signed Customer Transaction
+
+```http
+POST /ledger/test/create-signed-customer-transaction
+```
+
+End-to-end flow:
+
+- CreateAccount Payload
+- ClientTransaction Serialization
+- KMS Signing
+- SignedTransaction Serialization
+
+Returns:
+
+```json
+{
+  "serializedClientTransactionBase64": "...",
+  "serializedSignedTransactionBase64": "...",
+  "clientTransactionDigestHex": "..."
+}
+```
+
+---
+
+### Submit Signed Transaction
+
+```http
+POST /ledger/transactions/submit
+```
+
+Submits SignedTransaction to GCUL.
+
+Request:
+
+```json
+{
+  "serializedSignedTransaction": "..."
+}
+```
+
 
 ### Notes
 

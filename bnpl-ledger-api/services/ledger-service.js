@@ -3,6 +3,9 @@ const {
   GoogleAuth
 } = require("google-auth-library");
 const {
+  KeyManagementServiceClient
+} = require("@google-cloud/kms");
+const {
   ledgerConfig
 } = require("../config/ledger-config");
 
@@ -18,6 +21,9 @@ const auth = new GoogleAuth({
 
 const execAsync =
   util.promisify(exec);
+
+const kmsClient =
+  new KeyManagementServiceClient();
 
 async function queryAccount(
   accountId
@@ -82,6 +88,17 @@ async function queryTransactionState(
   };
 }
 
+// async function getPublicKey() {
+
+//   const [response] =
+//     await kmsClient.getPublicKey({
+//       name:
+//         "projects/ltc-hack2026-team17/locations/global/keyRings/gcul-hackathon/cryptoKeys/credit-passport-key/cryptoKeyVersions/1"
+//     });
+
+//   return response.pem;
+// }
+
 async function getPublicKey() {
 
   const { stdout } =
@@ -91,6 +108,10 @@ async function getPublicKey() {
       --keyring=gcul-hackathon \
       --location=global
     `);
+  // const { stdout } = await kmsClient.getPublicKey({
+  //     name:
+  //       "projects/ltc-hack2026-team17/locations/global/keyRings/gcul-hackathon/cryptoKeys/credit-passport-key/cryptoKeyVersions/1"
+  //   });
 
   return stdout;
 }

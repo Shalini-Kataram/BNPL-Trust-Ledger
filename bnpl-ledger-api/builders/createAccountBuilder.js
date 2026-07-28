@@ -6,16 +6,17 @@ function buildCreateAccountPayload({
   return {
     public_key: publicKey,
 
-    key_format:
-      "KEY_FORMAT_PEM_EC_P256_SHA256",
+    // key_format:
+      // "KEY_FORMAT_PEM_EC_P256_SHA256",
+    key_format: 2,
 
-    roles: [
-      "ROLE_PAYER",
-      "ROLE_RECEIVER"
-    ],
+    // roles: [
+    //   "ROLE_PAYER",
+    //   "ROLE_RECEIVER"
+    // ],
 
-    account_status:
-      "ACCOUNT_STATUS_ACTIVE",
+    // account_status:
+    //   "ACCOUNT_STATUS_ACTIVE",
 
     account_comment:
       comment,

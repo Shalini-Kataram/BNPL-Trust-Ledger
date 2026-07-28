@@ -14,6 +14,19 @@ const {
 const {
   signText, signBytes
 } = require("../services/kms-service");
+const {
+  createCustomerRequest
+} = require("../services/customer-service");
+const {
+  getLedgerMessageType,
+  getLedgerEnum
+} = require("../services/proto-service");
+const {
+  serializeCreateAccountClientTransaction
+} = require("../services/transactionSerializer-service");
+const {
+  buildSignedTransactionFromClientTransaction
+} = require("../services/signedTransaction-service");
 
 
 router.get(
@@ -282,6 +295,185 @@ router.get(
         });
 
       res.json(clientTransactionPayload);
+
+    } catch (error) {
+      res.status(500).json({
+        error: error.message
+      });
+    }
+  }
+);
+
+router.post(
+  "/customers",
+  async (req, res) => {
+
+    try {
+
+      const {
+        customerName
+      } = req.body;
+
+      if (!customerName) {
+        return res.status(400).json({
+          error:
+            "customerName is required"
+        });
+      }
+
+      const payload =
+        await createCustomerRequest(
+          customerName
+        );
+
+      res.json(payload);
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: error.message
+      });
+
+    }
+  }
+);
+
+router.get("/test/proto", async (req, res) => {
+  try {
+    const clientTransaction =
+      await getLedgerMessageType("ClientTransaction");
+
+    const signedTransaction =
+      await getLedgerMessageType("SignedTransaction");
+
+    const createAccount =
+      await getLedgerMessageType("CreateAccount");
+
+    let keyFormat = null;
+
+    try {
+      const keyFormatEnum =
+        await getLedgerEnum("KeyFormat");
+
+      keyFormat = keyFormatEnum.values;
+    } catch (enumError) {
+      keyFormat = "KeyFormat enum not resolved";
+    }
+
+    res.json({
+      status: "PROTO_LOADED",
+      messages: {
+        clientTransaction:
+          clientTransaction.fullName,
+        signedTransaction:
+          signedTransaction.fullName,
+        createAccount:
+          createAccount.fullName
+      },
+      enums: {
+        keyFormat
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: "PROTO_LOAD_FAILED",
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+router.post(
+  "/test/serialize-client-transaction",
+  async (req, res) => {
+    try {
+      const {
+        customerName
+      } = req.body;
+
+      if (!customerName) {
+        return res.status(400).json({
+          error: "customerName is required"
+        });
+      }
+
+      const result =
+        await serializeCreateAccountClientTransaction(
+          customerName
+        );
+
+      res.json(result);
+
+    } catch (error) {
+      res.status(500).json({
+        error: error.message
+      });
+    }
+  }
+);
+
+router.post(
+  "/test/build-signed-transaction",
+  async (req, res) => {
+    try {
+      const {
+        serializedClientTransactionBase64
+      } = req.body;
+
+      if (!serializedClientTransactionBase64) {
+        return res.status(400).json({
+          error:
+            "serializedClientTransactionBase64 is required"
+        });
+      }
+
+      const result =
+        await buildSignedTransactionFromClientTransaction(
+          serializedClientTransactionBase64
+        );
+
+      res.json(result);
+
+    } catch (error) {
+      res.status(500).json({
+        error: error.message
+      });
+    }
+  }
+);
+
+router.post(
+  "/test/create-signed-customer-transaction",
+  async (req, res) => {
+    try {
+      const { customerName } = req.body;
+
+      if (!customerName) {
+        return res.status(400).json({
+          error: "customerName is required"
+        });
+      }
+
+      const clientTransactionResult =
+        await serializeCreateAccountClientTransaction(customerName);
+
+      const signedTransactionResult =
+        await buildSignedTransactionFromClientTransaction(
+          clientTransactionResult.serializedClientTransactionBase64
+        );
+
+      res.json({
+        customerName,
+        serializedClientTransactionBase64:
+          clientTransactionResult.serializedClientTransactionBase64,
+        serializedSignedTransactionBase64:
+          signedTransactionResult.serializedSignedTransactionBase64,
+        clientTransactionDigestHex:
+          signedTransactionResult.clientTransactionDigestHex,
+        signedTransactionByteLength:
+          signedTransactionResult.byteLength
+      });
 
     } catch (error) {
       res.status(500).json({
