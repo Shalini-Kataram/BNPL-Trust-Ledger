@@ -40,6 +40,13 @@ function resolveFinalDecision(
   return null;
 }
 
+function toNegativeRiskScore(
+  trustScore
+) {
+
+  return 100- trustScore;
+}
+
 async function publishFinalDecision(
   accountId,
   finalDecision,
@@ -172,6 +179,10 @@ async function grantConsent(req, res) {
           exposureRatio:
             lloydsOnlyAssessment.exposureRatio,
           riskScore:
+            toNegativeRiskScore(
+              lloydsOnlyAssessment.riskScore
+            ),
+          trustScore:
             lloydsOnlyAssessment.riskScore,
           decision:
             internalDecision,
@@ -311,6 +322,10 @@ async function grantConsent(req, res) {
 
       bnplData: {
         riskScore:
+          toNegativeRiskScore(
+            externalRiskScore
+          ),
+        trustScore:
           externalRiskScore,
         riskDecision:
           bnplDecision,
