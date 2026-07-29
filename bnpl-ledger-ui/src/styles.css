@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
     --text: #13261a;
@@ -22,7 +22,7 @@
 body {
     margin: 0;
     color: var(--text);
-    font-family: "Manrope", "Segoe UI", sans-serif;
+    font-family: "Public Sans", "Segoe UI", sans-serif;
     background:
         radial-gradient(circle at 12% 10%, rgba(132, 200, 148, 0.35), transparent 34%),
         radial-gradient(circle at 84% 16%, rgba(12, 107, 58, 0.16), transparent 30%),
@@ -130,7 +130,7 @@ p {
 h1,
 h2,
 h3 {
-    font-family: "Fraunces", Georgia, serif;
+    font-family: "Public Sans", "Segoe UI", sans-serif;
     letter-spacing: -0.01em;
 }
 
@@ -641,8 +641,74 @@ h3 {
     justify-content: flex-start;
 }
 
+.customer-rejection-note {
+    margin-top: 12px;
+    border-left: 4px solid #bf2d2d;
+    border-radius: 12px;
+    background: #fff6f6;
+    border: 1px solid rgba(191, 45, 45, 0.22);
+    padding: 12px 14px;
+    color: #4a1010;
+}
+
+.customer-rejection-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #7a1414;
+}
+
+.customer-rejection-note p {
+    margin: 0;
+    line-height: 1.45;
+    color: #4a1010;
+}
+
+.customer-rejection-note ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+.customer-rejection-note li {
+    margin: 4px 0;
+    color: #4a1010;
+}
+
+.customer-rejection-detail-title {
+    margin-top: 10px !important;
+    font-weight: 700;
+    color: #7a1414 !important;
+}
+
+.customer-rejection-detail-list {
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+}
+
 .nav-row {
     margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.embedded-dashboard-wrap {
+    margin-top: 16px;
+}
+
+.embedded-dashboard {
+    border: 1px solid rgba(12, 107, 58, 0.14);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.82);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.dashboard-ledger-table {
+    margin-top: 14px;
+}
+
+.dashboard-action-row {
+    margin-top: 16px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -762,6 +828,10 @@ h3 {
     }
 
     .nav-row {
+        flex-direction: column;
+    }
+
+    .dashboard-action-row {
         flex-direction: column;
     }
 }
