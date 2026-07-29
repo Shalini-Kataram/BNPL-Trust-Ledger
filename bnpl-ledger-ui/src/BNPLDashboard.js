@@ -1,5 +1,4 @@
 import React from "react";
-import { sampleLedgerData } from "./data/sampleLedgerData.js";
 import "./BNPLDashboard.css";
 
 const BNPLDashboard = ({
@@ -9,9 +8,46 @@ const BNPLDashboard = ({
     shouldShowCustomerGuidance,
     rejectionGuidance,
     rejectionDetails,
+    onProceedWithPayment,
     onBackToHome
 }) => {
-    const dashboardView = ledgerData || sampleLedgerData;
+    const dashboardView = ledgerData;
+
+    if (!dashboardView) {
+        return (
+            <main className="dashboard-shell">
+                <header className="card header-card">
+                    <div>
+                        <p className="eyebrow">BNPL Payment Risk Dashboard</p>
+                        <h1>Credit Risk & BNPL Ledger</h1>
+                        <p className="subtitle">Live API data is required to populate this dashboard.</p>
+                    </div>
+
+                    <div className="badge-row">
+                        <span className="badge badge-info">Multi-Provider BNPL</span>
+                        {isLoading ? (
+                            <span className="badge badge-warning">Loading live data...</span>
+                        ) : (
+                            <span className="badge badge-danger">No live data available</span>
+                        )}
+                    </div>
+                    {apiError && <p className="subtle-text">{apiError}</p>}
+                    {!isLoading && !apiError && <p className="subtle-text">Complete consent step and retry to load dashboard data.</p>}
+                </header>
+
+                <div className="action-row">
+                    <button
+                        type="button"
+                        className="action-btn secondary"
+                        onClick={() => onBackToHome?.()}
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </main>
+        );
+    }
+
     const providers = Array.isArray(dashboardView.providers) ? dashboardView.providers : [];
 
     const hasValue = (value) => value !== null && value !== undefined && value !== "";
@@ -99,6 +135,14 @@ const BNPLDashboard = ({
     const assessmentMessage = String(dashboardView.assessmentMessage || "").trim();
     const assessmentRiskScore = hasNumber(dashboardView.assessmentRiskScore) ? dashboardView.assessmentRiskScore : null;
     const assessmentExposureRatio = hasNumber(dashboardView.exposureRatio) ? dashboardView.exposureRatio : null;
+    const hasAssessmentRiskScore = assessmentRiskScore !== null;
+    const riskScorePercent = hasAssessmentRiskScore
+        ? Math.min(Math.max(assessmentRiskScore, 0), 100)
+        : (hasRiskData ? riskData.percentage : 0);
+    const riskScoreHue = Math.max(0, Math.min(120, Math.round(120 - (riskScorePercent * 1.2))));
+    const riskScoreColor = `hsl(${riskScoreHue}, 72%, 48%)`;
+    const halfMeterMarks = [0, 25, 50, 75, 100];
+    const halfMeterAngles = [-90, -45, 0, 45, 90];
     const hasAssessmentData =
         hasValue(assessmentDecision)
         || hasValue(assessmentMode)
@@ -107,17 +151,15 @@ const BNPLDashboard = ({
         || assessmentRiskScore !== null
         || assessmentExposureRatio !== null;
 
-    const approvedDecisionSet = ["APPROVE", "APPROVED", "PASS", "ACCEPTED"];
-    const rejectedDecisionSet = ["REJECT", "REJECTED", "DECLINE", "DECLINED"];
+    const approvedDecisionSet = ["APPROVE", "APPROVED", "PASS", "ACCEPTED", "APPROVED WITH CONDITIONS"];
 
     const isAssessmentApproved = approvedDecisionSet.includes(assessmentDecision);
-    const isAssessmentRejected = rejectedDecisionSet.includes(assessmentDecision);
 
     const assessmentStatus = isAssessmentApproved
         ? { icon: "✔", label: "APPROVED", className: "decision-pill approved" }
-        : isAssessmentRejected
-            ? { icon: "✖", label: "REJECTED", className: "decision-pill rejected" }
-            : null;
+        : { icon: "✖", label: "REJECTED", className: "decision-pill rejected" };
+
+    const approvedFlowMessage = assessmentMessage || "Your BNPL request is approved. You can continue with checkout.";
 
     return (
         <main className="dashboard-shell">
@@ -148,26 +190,31 @@ const BNPLDashboard = ({
                             <p className="meta-value">{dashboardView.activePlans}</p>
                         </div>
                     )}
-                    {hasRiskData && (
+                    {hasAssessmentRiskScore && (
                         <div>
-                            <p className="meta-label">Risk Level</p>
+                            <p className="meta-label">Risk Score</p>
                             <div
-                                className="mini-speedometer"
+                                className="risk-score-card"
                                 style={{
-                                    "--gauge-color": riskColor,
-                                    "--gauge-fill": `${riskData.percentage}%`,
-                                    "--needle-angle": `${-90 + (riskData.percentage / 100) * 180}deg`
+                                    "--risk-color": riskScoreColor,
+                                    "--risk-percent": `${riskScorePercent}%`
                                 }}
-                                aria-label={`Risk ${dashboardView.riskLevel} at ${riskData.percentage}%`}
+                                aria-label={`Risk score ${assessmentRiskScore} out of 100`}
                             >
-                                <div className="mini-speedometer-track" />
-                                <div className="mini-speedometer-fill" />
-                                <div className="mini-speedometer-needle" />
-                                <div className="mini-speedometer-center" />
+                                <div className="risk-score-top">
+                                    <strong className="risk-score-value">{assessmentRiskScore}</strong>
+                                    <span className="risk-score-max">/ 100</span>
+                                </div>
+                                <div className="risk-score-bar" aria-hidden="true">
+                                    <span className="risk-score-fill" />
+                                </div>
+                                <div className="risk-score-footer">
+                                    <span className="risk-score-label" style={{ color: riskScoreColor }}>
+                                        {riskScorePercent <= 30 ? 'Low risk' : riskScorePercent <= 60 ? 'Moderate risk' : 'High risk'}
+                                    </span>
+                                    <span className="meta-value">Risk score {assessmentRiskScore}/100</span>
+                                </div>
                             </div>
-                            <p className="meta-value" style={{ color: riskColor }}>
-                                {dashboardView.riskLevel} ({riskData.percentage}%)
-                            </p>
                         </div>
                     )}
                 </div>
@@ -177,7 +224,7 @@ const BNPLDashboard = ({
                     {isLoading ? (
                         <span className={`badge badge-warning`}>Loading live data...</span>
                     ) : apiError ? (
-                        <span className={`badge badge-danger`}>Fallback data in use</span>
+                        <span className={`badge badge-danger`}>Live data unavailable</span>
                     ) : (
                         <span className={`badge badge-success`}>Live data loaded</span>
                     )}
@@ -216,25 +263,27 @@ const BNPLDashboard = ({
                         </div>
                     )}
 
-                    {shouldShowCustomerGuidance && rejectionGuidance && (
-                        <div className="customer-rejection-note" role="status" aria-live="polite">
-                            <p className="customer-rejection-title">{rejectionGuidance.title}</p>
+                    {isAssessmentApproved && (
+                        <div className="customer-guidance-note customer-guidance-note-positive" role="status" aria-live="polite">
+                            <p className="customer-guidance-title">Approved: You are eligible for this BNPL plan.</p>
+                            <p>{approvedFlowMessage}</p>
+                        </div>
+                    )}
+
+                    {!isAssessmentApproved && shouldShowCustomerGuidance && rejectionGuidance && (
+                        <div className="customer-guidance-note customer-guidance-note-negative" role="status" aria-live="polite">
+                            <p className="customer-guidance-title">{rejectionGuidance.title}</p>
                             <p>{rejectionGuidance.message}</p>
-                            {Array.isArray(rejectionDetails) && rejectionDetails.length > 0 && (
+                            {Array.isArray(rejectionGuidance.actions) && rejectionGuidance.actions.length > 0 && (
                                 <>
-                                    <p className="customer-rejection-detail-title">Why this result was returned:</p>
-                                    <ul className="customer-rejection-detail-list">
-                                        {rejectionDetails.map((detail) => (
-                                            <li key={detail}>{detail}</li>
+                                    <p className="customer-guidance-subtitle">Improvements to increase approval chance:</p>
+                                    <ul className="customer-guidance-detail-list">
+                                        {rejectionGuidance.actions.map((action) => (
+                                            <li key={action}>{action}</li>
                                         ))}
                                     </ul>
                                 </>
                             )}
-                            <ul>
-                                {Array.isArray(rejectionGuidance.actions) && rejectionGuidance.actions.map((action) => (
-                                    <li key={action}>{action}</li>
-                                ))}
-                            </ul>
                         </div>
                     )}
                 </section>
@@ -391,6 +440,14 @@ const BNPLDashboard = ({
             )}
 
             <div className="action-row">
+                <button
+                    type="button"
+                    className="action-btn secondary"
+                    onClick={() => onProceedWithPayment?.()}
+                    disabled={!isAssessmentApproved}
+                >
+                    Proceed to payment
+                </button>
                 <button
                     type="button"
                     className="action-btn secondary"

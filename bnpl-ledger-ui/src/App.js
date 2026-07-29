@@ -1,7 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
 import BNPLDashboard from './BNPLDashboard';
-import { sampleLedgerData } from './data/sampleLedgerData';
 
 const DEFAULT_CONSENT_API_URL = 'https://bnpl-ledger-api-719603056384.us-central1.run.app/consent';
 
@@ -81,8 +80,9 @@ function normalizeLedgerData(apiResponse, fallback) {
     const consentEnriched = affordabilityAssessment?.consentEnriched && typeof affordabilityAssessment.consentEnriched === 'object'
         ? affordabilityAssessment.consentEnriched
         : affordabilityAssessment;
+    const bnplData = source?.bnplData || {};
     const aggregatedExposure = source?.aggregatedExposure || {};
-    const rawRiskScore = asNumber(consentEnriched?.riskScore, NaN);
+    const rawRiskScore = asNumber(bnplData?.riskScore, asNumber(consentEnriched?.riskScore, NaN));
     const derivedTrustScore = Number.isNaN(rawRiskScore) ? NaN : Math.max(0, Math.min(100, 100 - rawRiskScore));
     const trustScore = asNumber(source?.trustScore, asNumber(derivedTrustScore, asNumber(fallback.trustScore, 0)));
     const hasProvidersKey = Array.isArray(source?.providers);
@@ -159,10 +159,10 @@ function normalizeLedgerData(apiResponse, fallback) {
         ),
         exposureRatio: asNumber(consentEnriched?.exposureRatio, 0),
         assessmentMode: affordabilityAssessment?.mode || '',
-        assessmentDecision: consentEnriched?.decision || '',
-        assessmentReason: consentEnriched?.reason || '',
+        assessmentDecision: bnplData?.riskDecision || source?.finalDecision || consentEnriched?.decision || '',
+        assessmentReason: bnplData?.riskReason || consentEnriched?.reason || '',
         assessmentMessage: source?.message || '',
-        assessmentRiskScore: asNumber(consentEnriched?.riskScore, 0),
+        assessmentRiskScore: asNumber(bnplData?.riskScore, asNumber(consentEnriched?.riskScore, 0)),
         providers: normalizedProviders
     };
 }
@@ -237,7 +237,7 @@ export default function App() {
     const [selectedEmiMonths, setSelectedEmiMonths] = useState(3);
     const [hasSelectedEmiMonths, setHasSelectedEmiMonths] = useState(false);
     const [selectedPaymentOption, setSelectedPaymentOption] = useState(paymentOptions[0].id);
-    const [dashboardData, setDashboardData] = useState(sampleLedgerData);
+    const [dashboardData, setDashboardData] = useState(null);
     const [isFetchingDashboardData, setIsFetchingDashboardData] = useState(false);
     const [consentApiError, setConsentApiError] = useState('');
 
@@ -245,6 +245,7 @@ export default function App() {
 
     const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const dashboardView = dashboardData || {};
 
     const exposureSummary = useMemo(() => {
         const baseExposure = existingExposure.reduce((sum, item) => sum + item.outstanding, 0);
@@ -261,9 +262,9 @@ export default function App() {
     }, [cartTotal, selectedEmiMonths]);
 
     const decision = useMemo(() => {
-        const apiDecisionLabel = String(dashboardData.assessmentDecision || '').trim().toUpperCase();
-        const apiDecisionReason = String(dashboardData.assessmentReason || '').trim();
-        const apiMode = String(dashboardData.assessmentMode || '').trim();
+        const apiDecisionLabel = String(dashboardView.assessmentDecision || '').trim().toUpperCase();
+        const apiDecisionReason = String(dashboardView.assessmentReason || '').trim();
+        const apiMode = String(dashboardView.assessmentMode || '').trim();
 
         if (apiDecisionLabel) {
             let tone = 'warn';
@@ -274,6 +275,7 @@ export default function App() {
             }
 
             const reasons = [];
+
             if (apiDecisionReason) {
                 reasons.push(apiDecisionReason);
             }
@@ -282,10 +284,10 @@ export default function App() {
                 reasons.push(`Assessment mode: ${apiMode}`);
             }
 
-            reasons.push(`Risk score: ${dashboardData.assessmentRiskScore}`);
+            reasons.push(`Risk score: ${dashboardView.assessmentRiskScore}`);
 
-            if (dashboardData.exposureRatio) {
-                reasons.push(`Exposure ratio: ${(dashboardData.exposureRatio * 100).toFixed(1)}%`);
+            if (dashboardView.exposureRatio) {
+                reasons.push(`Exposure ratio: ${(dashboardView.exposureRatio * 100).toFixed(1)}%`);
             }
 
             return {
@@ -347,7 +349,7 @@ export default function App() {
         }
 
         return { label, tone, reasons };
-    }, [cartItemCount, consent, exposureSummary, dashboardData]);
+    }, [cartItemCount, consent, exposureSummary, dashboardView]);
 
     const updateQuantity = (product, delta) => {
         setCart(current => {
@@ -382,7 +384,7 @@ export default function App() {
         setSelectedEmiMonths(12);
         setHasSelectedEmiMonths(false);
         setSelectedPaymentOption(paymentOptions[0].id);
-        setDashboardData(sampleLedgerData);
+        setDashboardData(null);
         setIsFetchingDashboardData(false);
         setConsentApiError('');
         setCart([]);
@@ -439,6 +441,10 @@ export default function App() {
         setStep(0);
     };
 
+    const handleProceedWithPayment = () => {
+        setStep(6);
+    };
+
     const fetchConsentDashboardData = async () => {
         setIsFetchingDashboardData(true);
         setConsentApiError('');
@@ -478,7 +484,7 @@ export default function App() {
                     }
 
                     const responseData = await response.json();
-                    const normalized = normalizeLedgerData(responseData, sampleLedgerData);
+                    const normalized = normalizeLedgerData(responseData, {});
                     setDashboardData(normalized);
                     return;
                 } catch (error) {
@@ -488,7 +494,7 @@ export default function App() {
 
             throw lastError || new Error('Consent API call failed');
         } catch (error) {
-            setDashboardData(sampleLedgerData);
+            setDashboardData(null);
             const message = String(error?.message || '');
             const dnsFailure = message.includes('ERR_NAME_NOT_RESOLVED') || message.includes('name could not be resolved');
             setConsentApiError(
@@ -509,30 +515,31 @@ export default function App() {
         setStep(current => Math.min(flowSteps.length - 1, current + 1));
     };
 
-    const trustScoreLabel = String(dashboardData.trustScoreLabel || '').trim().toUpperCase();
-    const apiDecisionLabel = String(dashboardData.assessmentDecision || '').trim().toUpperCase();
+    const trustScoreLabel = String(dashboardView.trustScoreLabel || '').trim().toUpperCase();
+    const apiDecisionLabel = String(dashboardView.assessmentDecision || '').trim().toUpperCase();
+    const approvedDecisionSet = ['APPROVE', 'APPROVED', 'PASS', 'ACCEPTED', 'APPROVED WITH CONDITIONS'];
+    const isApprovedDashboardDecision = approvedDecisionSet.includes(apiDecisionLabel);
     const rejectedDecisionSet = ['REJECT', 'REJECTED', 'DECLINE', 'DECLINED'];
     const isRejectedDecision = rejectedDecisionSet.includes(apiDecisionLabel);
-    const apiRiskScore = Number(dashboardData.assessmentRiskScore);
-    const canProceedFromDashboard =
-        !isRejectedDecision
-        && (
-            trustScoreLabel === 'GOOD'
-            || trustScoreLabel === 'MEDIUM'
-            || ['REVIEW', 'APPROVE', 'APPROVED'].includes(apiDecisionLabel)
-        );
+    const apiRiskScore = Number(dashboardView.assessmentRiskScore);
+    const canProceedFromDashboard = isApprovedDashboardDecision;
     const displayDecisionLabel = String(decision.label || '').trim().toUpperCase();
+    const resolvedDecisionLabel = apiDecisionLabel || displayDecisionLabel;
+    const isApprovedDecision = ['APPROVE', 'APPROVED', 'APPROVED WITH CONDITIONS'].includes(resolvedDecisionLabel);
+    const affordabilityStatusLabel = isApprovedDecision ? 'APPROVED' : 'REJECTED';
+    const affordabilityStatusIcon = isApprovedDecision ? '✔' : '✖';
+    const affordabilityStatusClass = isApprovedDecision ? 'decision-good' : 'decision-bad';
     const shouldShowCustomerGuidance =
         (!Number.isNaN(apiRiskScore) && apiRiskScore > 70)
         || (apiDecisionLabel
             ? apiDecisionLabel !== 'APPROVE' && apiDecisionLabel !== 'APPROVED'
             : displayDecisionLabel !== 'APPROVE' && displayDecisionLabel !== 'APPROVED' && displayDecisionLabel !== 'APPROVED WITH CONDITIONS');
     const rejectionGuidance = useMemo(() => {
-        const reason = String(dashboardData.assessmentReason || '').trim();
-        const apiMessage = String(dashboardData.assessmentMessage || '').trim();
-        const mode = String(dashboardData.assessmentMode || '').trim();
-        const riskScore = Number(dashboardData.assessmentRiskScore);
-        const exposureRatio = Number(dashboardData.exposureRatio);
+        const reason = String(dashboardView.assessmentReason || '').trim();
+        const apiMessage = String(dashboardView.assessmentMessage || '').trim();
+        const mode = String(dashboardView.assessmentMode || '').trim();
+        const riskScore = Number(dashboardView.assessmentRiskScore);
+        const exposureRatio = Number(dashboardView.exposureRatio);
         const reasonUpper = reason.toUpperCase();
 
         let title = 'We know this is disappointing, and we are here to help.';
@@ -578,7 +585,7 @@ export default function App() {
         }
 
         return { title, message, actions };
-    }, [dashboardData.assessmentMessage, dashboardData.assessmentMode, dashboardData.assessmentReason, dashboardData.assessmentRiskScore, dashboardData.exposureRatio]);
+    }, [dashboardView]);
 
     const rejectionDetails = useMemo(() => {
         if (!shouldShowCustomerGuidance) {
@@ -586,10 +593,10 @@ export default function App() {
         }
 
         const details = [];
-        const reason = String(dashboardData.assessmentReason || '').trim();
-        const mode = String(dashboardData.assessmentMode || '').trim();
-        const riskScore = Number(dashboardData.assessmentRiskScore);
-        const exposureRatio = Number(dashboardData.exposureRatio);
+        const reason = String(dashboardView.assessmentReason || '').trim();
+        const mode = String(dashboardView.assessmentMode || '').trim();
+        const riskScore = Number(dashboardView.assessmentRiskScore);
+        const exposureRatio = Number(dashboardView.exposureRatio);
 
         if (reason) {
             details.push(`Decision reason: ${reason}`);
@@ -607,32 +614,23 @@ export default function App() {
             details.push(`Exposure ratio: ${(exposureRatio * 100).toFixed(1)}% of allowed affordability capacity`);
         }
 
-        if (typeof dashboardData.currentExposure === 'number') {
-            details.push(`Current outstanding BNPL exposure: ${formatCurrency(dashboardData.currentExposure)}`);
+        if (typeof dashboardView.currentExposure === 'number') {
+            details.push(`Current outstanding BNPL exposure: ${formatCurrency(dashboardView.currentExposure)}`);
         }
 
-        if (typeof dashboardData.requestedAmount === 'number') {
-            details.push(`Requested BNPL amount: ${formatCurrency(dashboardData.requestedAmount)}`);
+        if (typeof dashboardView.requestedAmount === 'number') {
+            details.push(`Requested BNPL amount: ${formatCurrency(dashboardView.requestedAmount)}`);
         }
 
-        if (typeof dashboardData.futureExposure === 'number') {
-            details.push(`Projected exposure after approval: ${formatCurrency(dashboardData.futureExposure)}`);
+        if (typeof dashboardView.futureExposure === 'number') {
+            details.push(`Projected exposure after approval: ${formatCurrency(dashboardView.futureExposure)}`);
         }
 
         return details;
-    }, [
-        dashboardData.assessmentMode,
-        dashboardData.assessmentReason,
-        dashboardData.assessmentRiskScore,
-        dashboardData.currentExposure,
-        dashboardData.exposureRatio,
-        dashboardData.futureExposure,
-        dashboardData.requestedAmount,
-        shouldShowCustomerGuidance
-    ]);
+    }, [dashboardView, shouldShowCustomerGuidance]);
 
-    const canMoveNext = [true, cartItemCount > 0, !!bnplAccountName, cartItemCount > 0, true, canProceedFromDashboard, true][step];
-    const hasExposureConsent = step >= 5 && (consent || !!dashboardData.assessmentMode);
+    const canMoveNext = [true, cartItemCount > 0, !!bnplAccountName, cartItemCount > 0 && hasSelectedEmiMonths, true, canProceedFromDashboard, true][step];
+    const hasExposureConsent = step >= 5 && (consent || !!dashboardView.assessmentMode);
 
     return (
         <div className="app-shell">
@@ -648,10 +646,10 @@ export default function App() {
                             Customer-friendly shopping flow with consent-aware affordability checks and explainable outcomes.
                         </p>
                         <div className="quick-actions">
-                            <button className="secondary-btn" onClick={() => setStep(1)}>
+                            <button className="secondary-btn" disabled={step >= 2} onClick={() => setStep(1)}>
                                 Cart ({cartItemCount})
                             </button>
-                            <button className="primary-btn" disabled={!cartItemCount} onClick={() => setStep(2)}>
+                            <button className="primary-btn" disabled={!cartItemCount || step >= 2} onClick={() => setStep(2)}>
                                 Checkout products
                             </button>
                         </div>
@@ -767,7 +765,7 @@ export default function App() {
                             <h3>Order summary</h3>
                             <p>Total purchase value</p>
                             <strong className="big-number">{formatCurrency(cartTotal)}</strong>
-                            <button className="secondary-btn" disabled={!cartItemCount} onClick={() => setStep(2)}>
+                            <button className="secondary-btn cta-account-access" disabled={!cartItemCount} onClick={() => setStep(2)}>
                                 Continue to BNPL account access
                             </button>
                         </aside>
@@ -884,7 +882,11 @@ export default function App() {
                                     <p className="auth-success">Active BNPL account: {bnplAccountName}</p>
                                 )}
 
-                                <button className="primary-btn" type="submit">
+                                <button
+                                    className="primary-btn"
+                                    type="submit"
+                                    disabled={authMode === 'login' && !!bnplAccountName}
+                                >
                                     {authMode === 'login' ? 'Login to BNPL Account' : 'Create BNPL Account'}
                                 </button>
                             </form>
@@ -947,7 +949,7 @@ export default function App() {
                             <p>Estimated monthly: {formatCurrency(exposureSummary.proposedMonthly)}</p>
                             <p>Payment option: {selectedPayment.label}</p>
                             <p>Setup fee: {selectedPayment.fee ? formatCurrency(selectedPayment.fee) : 'No fee'}</p>
-                            <button className="secondary-btn" disabled={!cartItemCount} onClick={() => setStep(4)}>
+                            <button className="secondary-btn cta-consent" disabled={!cartItemCount || !hasSelectedEmiMonths} onClick={() => setStep(4)}>
                                 Continue to consent
                             </button>
                         </aside>
@@ -991,6 +993,7 @@ export default function App() {
                             shouldShowCustomerGuidance={shouldShowCustomerGuidance}
                             rejectionGuidance={rejectionGuidance}
                             rejectionDetails={rejectionDetails}
+                            onProceedWithPayment={handleProceedWithPayment}
                             onBackToHome={handleDashboardBackToHome}
                         />
                     </section>
@@ -999,70 +1002,18 @@ export default function App() {
                 {step === 6 && (
                     <section className="panel split">
                         <div>
-                            <p className="eyebrow">Decision</p>
-                            <h2>Affordability outcome</h2>
-                            {shouldShowCustomerGuidance && (
-                                <div className="customer-rejection-note" role="status" aria-live="polite">
-                                    <p className="customer-rejection-title">{rejectionGuidance.title}</p>
-                                    <p>{rejectionGuidance.message}</p>
-                                    {rejectionDetails.length > 0 && (
-                                        <>
-                                            <p className="customer-rejection-detail-title">Why this result was returned:</p>
-                                            <ul className="customer-rejection-detail-list">
-                                                {rejectionDetails.map(detail => (
-                                                    <li key={detail}>{detail}</li>
-                                                ))}
-                                            </ul>
-                                        </>
-                                    )}
-                                    <ul>
-                                        {rejectionGuidance.actions.map(action => (
-                                            <li key={action}>{action}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            <div className="decision-metrics">
-                                <div>
-                                    <span>External exposure</span>
-                                    <strong>{hasExposureConsent ? formatCurrency(dashboardData.currentExposure ?? exposureSummary.baseExposure) : 'Limited view'}</strong>
-                                </div>
-                                <div>
-                                    <span>New BNPL request</span>
-                                    <strong>{formatCurrency(dashboardData.requestedAmount || cartTotal)}</strong>
-                                </div>
-                                <div>
-                                    <span>Total exposure</span>
-                                    <strong>{formatCurrency(dashboardData.futureExposure ?? exposureSummary.totalExposure)}</strong>
-                                </div>
-                                <div>
-                                    <span>Total monthly</span>
-                                    <strong>{formatCurrency(dashboardData.monthlyCommitment ?? exposureSummary.totalMonthly)}</strong>
-                                </div>
-                                <div>
-                                    <span>EMI term</span>
-                                    <strong>{selectedEmiMonths} months</strong>
-                                </div>
-                                <div>
-                                    <span>Payment method</span>
-                                    <strong>{selectedPayment.label}</strong>
-                                </div>
-                            </div>
-
-                            <div className="list">
-                                {decision.reasons.map(reason => (
-                                    <div key={reason} className="list-item rationale-item">
-                                        {reason}
-                                    </div>
-                                ))}
-                            </div>
+                            <p className="eyebrow">Payment Status</p>
+                            <h2>Thank you!</h2>
+                            <div className="decision-pill decision-good">✔ Your payment is done.</div>
+                            <p className="hero-text" style={{ marginTop: '12px' }}>
+                                Your BNPL payment has been successfully completed.
+                            </p>
                         </div>
 
                         <aside className="side-card">
-                            <h3>Decision auditability</h3>
+                            <h3>Payment Confirmation</h3>
                             <p>
-                                This output links customer consent, ledger evidence, and policy thresholds into one
-                                explainable lending decision.
+                                Thank you for completing your payment. You can start a new customer journey anytime.
                             </p>
                             <button className="secondary-btn" onClick={resetJourney}>
                                 Start new customer journey

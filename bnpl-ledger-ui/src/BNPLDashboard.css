@@ -73,93 +73,66 @@ p {
 .header-meta-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin-top: 1rem;
+  gap: 1rem;
 }
 
-.meta-label {
+.risk-score-card {
+  margin-top: 0.65rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(14, 24, 52, 0.96), rgba(10, 18, 40, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.risk-score-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.risk-score-value {
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 800;
+  color: var(--risk-color, #29a57a);
+}
+
+.risk-score-max {
   color: #9fb3e8;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
+  font-size: 0.9rem;
 }
 
-.meta-value {
-  margin-top: 0.2rem;
-  font-weight: 600;
-}
-
-.mini-speedometer {
-  --gauge-color: #29a57a;
-  --gauge-fill: 25%;
-  --needle-angle: -45deg;
+.risk-score-bar {
   position: relative;
-  width: 110px;
-  height: 56px;
-  margin-top: 0.35rem;
+  margin-top: 0.7rem;
+  height: 12px;
+  border-radius: 999px;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.mini-speedometer-track,
-.mini-speedometer-fill {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px 999px 0 0;
-  border: 10px solid transparent;
-  border-bottom: 0;
+.risk-score-fill {
+  display: block;
+  width: var(--risk-percent, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1fbd73 0%, #d6db3a 52%, #f05454 100%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--risk-color, #29a57a) 45%, transparent);
 }
 
-.mini-speedometer-track {
-  border-top-color: rgba(255, 255, 255, 0.2);
-  border-left-color: rgba(255, 255, 255, 0.2);
-  border-right-color: rgba(255, 255, 255, 0.2);
-}
-
-.mini-speedometer-fill {
-  border-top-color: var(--gauge-color);
-  border-left-color: var(--gauge-color);
-  border-right-color: var(--gauge-color);
-  clip-path: polygon(0 0, var(--gauge-fill) 0, var(--gauge-fill) 100%, 0 100%);
-}
-
-.mini-speedometer-needle {
-  position: absolute;
-  width: 2px;
-  height: 40px;
-  left: 54px;
-  bottom: 1px;
-  transform-origin: bottom center;
-  transform: rotate(var(--needle-angle));
-  background: #f3f8ff;
-  border-radius: 2px;
-}
-
-.mini-speedometer-center {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #f3f8ff;
-  left: 50px;
-  bottom: 0;
-}
-
-.dashboard-shell .eyebrow {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: #9cb6f1;
-}
-
-.section-header {
+.risk-score-footer {
+  margin-top: 0.65rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.9rem;
-  gap: 0.8rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.section-header h2 {
-  font-size: 1.25rem;
+.risk-score-label {
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .section-header.compact h2 {
@@ -297,6 +270,93 @@ p {
 .score-meter-card {
   display: grid;
   align-content: start;
+}
+
+.half-speed-meter {
+  margin: 0.8rem 0 0.4rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.half-speed-meter-scale {
+  position: relative;
+  width: 210px;
+  height: 105px;
+  margin: 0 auto -0.25rem;
+  pointer-events: none;
+  font-size: 0.72rem;
+  color: #b9c7ea;
+  letter-spacing: 0.03em;
+}
+
+.half-speed-meter-scale span {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform-origin: center bottom;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(3, 10, 26, 0.7);
+}
+
+.half-speed-meter-track {
+  position: relative;
+  width: 210px;
+  height: 105px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 210px 210px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 -16px 24px rgba(6, 11, 30, 0.2);
+}
+
+.half-speed-meter-fill {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 180deg,
+      #1fbd73 0deg,
+      #1fbd73 36deg,
+      #54c764 54deg,
+      #d6db3a 90deg,
+      #f0b93f 126deg,
+      #f05454 180deg);
+  clip-path: inset(0 0 50% 0);
+  opacity: 0.96;
+  mask: linear-gradient(#000 0 0) top / 100% 100% no-repeat;
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 100% no-repeat;
+}
+
+.half-speed-meter-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 17, 38, 0.28);
+  clip-path: inset(0 0 0 calc(var(--meter-percent, 0%) + 0.5%));
+  opacity: 0.9;
+}
+
+.half-speed-meter-needle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 4px;
+  height: 96px;
+  transform-origin: bottom center;
+  transform: translateX(-50%) rotate(var(--meter-angle, -90deg));
+  border-radius: 999px;
+  background: linear-gradient(180deg, #eef4ff 0%, var(--meter-color, #29a57a) 100%);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14), 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+.half-speed-meter-center {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #d8e3f6 45%, #9fb0d8 100%);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14), 0 0 16px rgba(255, 255, 255, 0.12);
 }
 
 .score-ring-wrap {
@@ -529,6 +589,49 @@ p {
   background: rgba(120, 30, 36, 0.28);
   border-color: rgba(255, 158, 160, 0.45);
   box-shadow: 0 0 0 1px rgba(255, 158, 160, 0.2) inset;
+}
+
+.customer-guidance-note {
+  margin-top: 0.7rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 0.75rem 0.85rem;
+}
+
+.customer-guidance-note p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.customer-guidance-title {
+  font-weight: 700;
+  margin-bottom: 0.3rem !important;
+}
+
+.customer-guidance-subtitle {
+  font-weight: 700;
+  margin-top: 0.55rem !important;
+}
+
+.customer-guidance-detail-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.05rem;
+}
+
+.customer-guidance-detail-list li {
+  margin: 0.2rem 0;
+}
+
+.customer-guidance-note-positive {
+  background: rgba(12, 88, 62, 0.2);
+  border-color: rgba(118, 233, 188, 0.45);
+  color: #d9fff0;
+}
+
+.customer-guidance-note-negative {
+  background: rgba(120, 30, 36, 0.28);
+  border-color: rgba(255, 158, 160, 0.45);
+  color: #ffe0e2;
 }
 
 .eligible-amount-card {
