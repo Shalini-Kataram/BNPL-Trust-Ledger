@@ -18,6 +18,52 @@ require("../services/ledgerService");
 const eventTypes =
 require("../constants/eventTypes");
 
+function resolveFinalDecision(
+  assessmentDecision,
+  trustScore
+) {
+
+  if (assessmentDecision === "APPROVE") {
+    return "APPROVED";
+  }
+
+  if (assessmentDecision === "REJECT") {
+    return "REJECTED";
+  }
+
+  if (assessmentDecision === "REVIEW") {
+    return trustScore >= 60
+      ? "APPROVED"
+      : "REJECTED";
+  }
+
+  return null;
+}
+
+async function publishFinalDecision(
+  accountId,
+  finalDecision,
+  requestedAmount
+) {
+
+  if (!finalDecision) {
+    return;
+  }
+
+  await ledger.publish({
+    customerHash: accountId,
+    provider: "LLOYDS",
+    eventType:
+      finalDecision === "APPROVED"
+        ? eventTypes.LOAN_APPROVED
+        : eventTypes.LOAN_REJECTED,
+    amount:
+      finalDecision === "APPROVED"
+        ? requestedAmount
+        : undefined
+  });
+}
+
 async function grantConsent(req, res) {
 
   try {
@@ -57,6 +103,20 @@ async function grantConsent(req, res) {
 
     if (!consent) {
 
+      const finalDecision =
+        resolveFinalDecision(
+          lloydsOnlyAssessment.decision,
+          lloydsOnlyAssessment.riskScore
+        );
+
+      const internalDecision =
+        finalDecision || "REJECTED";
+
+      const internalDecisionReason =
+        internalDecision === "APPROVED"
+          ? "Auto approved based on risk/trust score"
+          : "Auto rejected based on risk/trust score";
+
       await ledger.publish({
         customerHash: accountId,
         provider: "LLOYDS",
@@ -69,6 +129,12 @@ async function grantConsent(req, res) {
             lloydsOnlyAssessment
         }
       });
+
+      await publishFinalDecision(
+        accountId,
+        finalDecision,
+        requestedAmount
+      );
 
       return res.json({
 
@@ -97,8 +163,23 @@ async function grantConsent(req, res) {
         affordabilityAssessment: {
           mode:
             "LLOYDS_INTERNAL_ONLY",
-          ...lloydsOnlyAssessment
+          currentExposure:
+            lloydsOnlyAssessment.currentExposure,
+          requestedAmount:
+            lloydsOnlyAssessment.requestedAmount,
+          futureExposure:
+            lloydsOnlyAssessment.futureExposure,
+          exposureRatio:
+            lloydsOnlyAssessment.exposureRatio,
+          riskScore:
+            lloydsOnlyAssessment.riskScore,
+          decision:
+            internalDecision,
+          reason:
+            internalDecisionReason
         },
+
+        finalDecision,
 
         aggregatedExposure: null,
 
@@ -168,6 +249,20 @@ async function grantConsent(req, res) {
           )
       });
 
+    const finalDecision =
+      resolveFinalDecision(
+        consentEnrichedAssessment.decision,
+        consentEnrichedAssessment.riskScore
+      );
+
+    const bnplDecision =
+      finalDecision || "REJECTED";
+
+    const bnplDecisionReason =
+      bnplDecision === "APPROVED"
+        ? "Auto approved based on risk/trust score"
+        : "Auto rejected based on risk/trust score";
+
     await ledger.publish({
       customerHash: accountId,
       provider: "LLOYDS",
@@ -188,6 +283,12 @@ async function grantConsent(req, res) {
       }
     });
 
+    await publishFinalDecision(
+      accountId,
+      finalDecision,
+      requestedAmount
+    );
+
     return res.json({
 
       success: true,
@@ -205,16 +306,19 @@ async function grantConsent(req, res) {
       paymentOption,
 
       dataSources: {
-        lloydsBankingData: true,
         gculBnplData: true
       },
 
-      affordabilityAssessment: {
-        mode:
-          "LLOYDS_PLUS_GCUL",
-        consentEnriched:
-          consentEnrichedAssessment
+      bnplData: {
+        riskScore:
+          externalRiskScore,
+        riskDecision:
+          bnplDecision,
+        riskReason:
+          bnplDecisionReason
       },
+
+      finalDecision,
 
       aggregatedExposure: {
 
