@@ -419,18 +419,89 @@ A valid protobuf SignedTransaction is still required.
 
 ## Completed
 
-- GCUL Authentication
-- QueryAccount
-- QueryTransactionState
-- Public Key Retrieval
-- KMS Signing
-- Client Transaction Payload Creation
-- Submit Transaction Wrapper
+### GCUL Connectivity
 
-## Pending
+- QueryAccount integration
+- QueryTransactionState integration
+- Endpoint configuration and authentication
 
-- GCUL protobuf integration
-- SignedTransaction creation
-- CreateAccount execution
-- Token operations
-- Smart contract operations
+### Cloud KMS Integration
+
+- Public key retrieval
+- Transaction signing
+- SHA-256 digest generation
+
+### Protobuf Integration
+
+- GCUL proto loading
+- CreateAccount payload creation
+- ClientTransaction serialization
+- SignedTransaction serialization
+
+### Business APIs
+
+- Customer account creation request builder
+- Transaction payload generation
+- End-to-end signed transaction creation
+
+### Transaction Lifecycle
+
+Implemented:
+
+CreateAccount Payload
+↓
+ClientTransaction
+↓
+Protobuf Serialization
+↓
+SignedTransaction
+↓
+GCUL SubmitTransaction
+
+## Current Observation
+
+GCUL successfully parses the submitted SignedTransaction and validates the transaction structure.
+
+Transaction processing currently reaches signature verification, confirming that:
+
+- ClientTransaction protobuf generation is valid
+- SignedTransaction protobuf generation is valid
+- SubmitTransaction API integration is valid
+
+Further confirmation of the expected signing model for the hackathon environment is in progress.
+
+## New Endpoints
+
+### POST /ledger/customers
+
+Generate customer CreateAccount transaction model.
+
+### GET /ledger/test/proto
+
+Verify protobuf loading.
+
+### GET /ledger/test/client-transaction-payload
+
+Generate ClientTransaction payload.
+
+### POST /ledger/test/serialize-client-transaction
+
+Serialize ClientTransaction protobuf.
+
+### POST /ledger/test/build-signed-transaction
+
+Generate SignedTransaction protobuf.
+
+### POST /ledger/test/create-signed-customer-transaction
+
+Complete end-to-end flow:
+
+CreateAccount
+↓
+ClientTransaction
+↓
+Serialization
+↓
+Signing
+↓
+SignedTransaction
